@@ -36,6 +36,16 @@ type DBConfig struct {
 func (server *Server) Init(appConfig AppConfig, dbConfig DBConfig) {
 	fmt.Println("Welcom to " + appConfig.AppName)
 
+	server.InitDB(dbConfig)
+	server.InitRoutes()
+}
+
+func (server *Server) Run(addr string) {
+	fmt.Printf("Listening to port %s", addr)
+	log.Fatal(http.ListenAndServe(addr, server.Router))
+}
+
+func (server *Server) InitDB(dbConfig DBConfig) {
 	var err error
 	dsn := "root:@tcp(127.0.0.1:3306)/mipro?charset=utf8mb4&parseTime=True&loc=Local"
 	server.DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
@@ -43,13 +53,14 @@ func (server *Server) Init(appConfig AppConfig, dbConfig DBConfig) {
 		panic("Gagal melakukan koneksi ke database")
 	}
 
-	server.Router = mux.NewRouter()
-	server.InitRoutes()
-}
+	for _, model := range RegisterModel() {
+		err := server.DB.Debug().AutoMigrate(model.Model)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 
-func (server *Server) Run(addr string) {
-	fmt.Printf("Listening to port %s", addr)
-	log.Fatal(http.ListenAndServe(addr, server.Router))
+	fmt.Println("Database berhasil dimigrasi!")
 }
 
 func getEnv(key, fallback string) string {
