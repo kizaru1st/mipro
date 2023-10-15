@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"os"
 
+	"gorm.io/driver/mysql"
+
 	"github.com/joho/godotenv"
 
 	"github.com/gorilla/mux"
@@ -23,8 +25,24 @@ type AppConfig struct {
 	AppPort string
 }
 
-func (server *Server) Init(appConfig AppConfig) {
+type DBConfig struct {
+	DBHost     string
+	DBUser     string
+	DBPassword string
+	DBName     string
+	DBPort     string
+}
+
+func (server *Server) Init(appConfig AppConfig, dbConfig DBConfig) {
 	fmt.Println("Welcom to " + appConfig.AppName)
+
+	var err error
+	dsn := "root:@tcp(127.0.0.1:3306)/mipro?charset=utf8mb4&parseTime=True&loc=Local"
+	server.DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	if err != nil {
+		panic("Gagal melakukan koneksi ke database")
+	}
+
 	server.Router = mux.NewRouter()
 	server.InitRoutes()
 }
@@ -44,6 +62,7 @@ func getEnv(key, fallback string) string {
 func Run() {
 	var server = Server{}
 	var appConfig = AppConfig{}
+	var dbConfig = DBConfig{}
 
 	err := godotenv.Load()
 	if err != nil {
@@ -54,6 +73,12 @@ func Run() {
 	appConfig.AppEnv = getEnv("APP_ENV", "development")
 	appConfig.AppPort = getEnv("APP_PORT", "8080")
 
-	server.Init(appConfig)
+	dbConfig.DBHost = getEnv("DB_HOST", "localhost")
+	dbConfig.DBUser = getEnv("DB_USER", "root")
+	dbConfig.DBPassword = getEnv("DB_PASSWORD", "")
+	dbConfig.DBName = getEnv("DB_NAME", "mipro")
+	dbConfig.DBPort = getEnv("DB_Port", "3306")
+
+	server.Init(appConfig, dbConfig)
 	server.Run(":" + appConfig.AppPort)
 }
