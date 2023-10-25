@@ -1,0 +1,11 @@
+package controllers
+
+import (
+	"github.com/gorilla/mux"
+)
+
+func (server *Server) InitRoutes() {
+	server.Router = mux.NewRouter()
+	server.Router.HandleFunc("/", server.Home).Methods("GET")
+	server.Router.HandleFunc("/products", server.Products).Methods("GET")
+}

@@ -28,3 +28,15 @@ type Product struct {
 	ProductImage     []ProductImage
 	Categories       []Category `gorm:"many2many:product_categories;"`
 }
+
+func (p *Product) GetProducts(db *gorm.DB) (*[]Product, error) {
+	var err error
+	var products []Product
+
+	err = db.Debug().Limit(20).Find(&products).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &products, nil
+}
