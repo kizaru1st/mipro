@@ -1,10 +1,14 @@
 package app
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/kizaru1st/mipro/database/seeders"
+	"github.com/urfave/cli"
 
 	"gorm.io/driver/mysql"
 
@@ -20,9 +24,9 @@ type Server struct {
 }
 
 type AppConfig struct {
-	AppName string
-	AppEnv  string
-	AppPort string
+	AppName string // Nama aplikasi mipro
+	AppEnv  string // tahap aplikasi 'dev'
+	AppPort string // Port aplikasi
 }
 
 type DBConfig struct {
@@ -35,8 +39,6 @@ type DBConfig struct {
 
 func (server *Server) Init(appConfig AppConfig, dbConfig DBConfig) {
 	fmt.Println("Welcom to " + appConfig.AppName)
-
-	server.InitDB(dbConfig)
 	server.InitRoutes()
 }
 
@@ -61,6 +63,47 @@ func (server *Server) InitDB(dbConfig DBConfig) {
 	}
 
 	fmt.Println("Database berhasil dimigrasi!")
+}
+
+func (server *Server) dbMigrate() {
+	for _, model := range RegisterModel() {
+		err := server.DB.Debug().AutoMigrate(model.Model)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	fmt.Println("Database migrated successfully.")
+}
+
+func (server *Server) initCommand(config AppConfig, dbConfig DBConfig) {
+	server.InitDB(dbConfig)
+	cmdApp := cli.NewApp()
+	cmdApp.Commands = []cli.Command{
+		{
+			Name: "db:migrate",
+			Action: func(c *cli.Context) error {
+				server.dbMigrate()
+				return nil
+			},
+		},
+		{
+			Name: "db:seed",
+			Action: func(c *cli.Context) error {
+				err := seeders.DBSeed(server.DB)
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				return nil
+			},
+		},
+	}
+
+	err := cmdApp.Run(os.Args)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func getEnv(key, fallback string) string {
@@ -90,6 +133,14 @@ func Run() {
 	dbConfig.DBName = getEnv("DB_NAME", "mipro")
 	dbConfig.DBPort = getEnv("DB_Port", "3306")
 
-	server.Init(appConfig, dbConfig)
-	server.Run(":" + appConfig.AppPort)
+	flag.Parse()
+	arg := flag.Arg(0)
+
+	if arg != "" {
+		server.initCommand(appConfig, dbConfig)
+	} else {
+		server.Init(appConfig, dbConfig)
+		server.Run(":" + appConfig.AppPort)
+	}
+
 }

@@ -6,6 +6,7 @@ type Model struct {
 	Model interface{}
 }
 
+// Register all models
 func RegisterModel() []Model {
 	return []Model{
 		{Model: models.User{}},

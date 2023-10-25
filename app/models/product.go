@@ -3,6 +3,8 @@ package models
 import (
 	"time"
 
+	"gorm.io/gorm"
+
 	"github.com/shopspring/decimal"
 )
 
@@ -22,7 +24,7 @@ type Product struct {
 	Status           int             `gorm:"default:0"`
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
-	DeletedAt        time.Time
+	DeletedAt        gorm.DeletedAt
 	ProductImage     []ProductImage
 	Categories       []Category `gorm:"many2many:product_categories;"`
 }
