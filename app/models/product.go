@@ -40,3 +40,15 @@ func (p *Product) GetProducts(db *gorm.DB) (*[]Product, error) {
 
 	return &products, nil
 }
+
+func (p *Product) FindBySlug(db *gorm.DB, slug string) (*Product, error) {
+	var err error
+	var product Product
+
+	err = db.Debug().Model(&Product{}).Where("slug = ?", slug).First(&product).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &product, nil
+}

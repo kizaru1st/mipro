@@ -15,8 +15,9 @@ import (
 )
 
 type Server struct {
-	DB     *gorm.DB
-	Router *mux.Router
+	DB        *gorm.DB
+	Router    *mux.Router
+	AppConfig *AppConfig
 }
 
 type AppConfig struct {
