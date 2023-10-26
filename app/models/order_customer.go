@@ -20,3 +20,19 @@ type OrderCustomer struct {
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 }
+
+type OrderCustomerResponse struct {
+	ID         string `json:"id"`
+	UserID     string `json:"user_id"`
+	FirstName  string `json:"first_name"`
+	LastName   string `json:"last_name"`
+	CityID     string `json:"city_id"`
+	ProvinceID string `json:"province_id"`
+	Address1   string `json:"address1"`
+	Address2   string `json:"address2"`
+	Phone      string `json:"phone"`
+	Email      string `json:"email"`
+	PostCode   string `json:"post_code"`
+	CreatedAt  string `json:"created_at"`
+	UpdatedAt  string `json:"updated_at"`
+}

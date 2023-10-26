@@ -16,6 +16,16 @@ type Cart struct {
 	GrandTotal      decimal.Decimal `gorm:"type:decimal(16,2)"`
 }
 
+type CartResponse struct {
+	ID              string          `json:"id"`
+	BaseTotalPrice  decimal.Decimal `json:"base_total_price"`
+	TaxAmount       decimal.Decimal `json:"tax_amount"`
+	TaxPercent      decimal.Decimal `json:"tax_percent"`
+	DiscountAmount  decimal.Decimal `json:"discount_amount"`
+	DiscountPercent decimal.Decimal `json:"discount_percent"`
+	GrandTotal      decimal.Decimal `json:"grand_total"`
+}
+
 func (c *Cart) GetCart(db *gorm.DB, cartID string) (*Cart, error) {
 	var err error
 	var cart Cart

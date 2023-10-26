@@ -13,3 +13,11 @@ type Category struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
+
+type CategoryResponse struct {
+	ID        string `json:"id"`
+	ParentID  string `json:"parent_id"`
+	SectionID string `json:"section_id"`
+	Name      string `json:"name"`
+	Slug      string `json:"slug"`
+}

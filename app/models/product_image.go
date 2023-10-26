@@ -14,3 +14,15 @@ type ProductImage struct {
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 }
+
+type ProductImageResponse struct {
+	ID         string `json:"id"`
+	ProductID  string `json:"product_id"`
+	Path       string `json:"path"`
+	ExtraLarge string `json:"extra_large"`
+	Large      string `json:"large"`
+	Medium     string `json:"medium"`
+	Small      string `json:"small"`
+	CreatedAt  string `json:"created_at"`
+	UpdatedAt  string `json:"updated_at"`
+}

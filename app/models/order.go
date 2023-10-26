@@ -1,9 +1,10 @@
 package models
 
 import (
+	"time"
+
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
-	"time"
 )
 
 type Order struct {
@@ -36,4 +37,30 @@ type Order struct {
 	CreatedAt           time.Time
 	UpdatedAt           time.Time
 	DeletedAt           gorm.DeletedAt
+}
+
+type OrderResponse struct {
+	ID                  string `json:"id"`
+	UserID              string `json:"user_id"`
+	Code                string `json:"code"`
+	Status              int    `json:"status"`
+	OrderDate           string `json:"order_date"`
+	PaymentDue          string `json:"payment_due"`
+	PaymentStatus       string `json:"payment_status"`
+	PaymentToken        string `json:"payment_token"`
+	BaseTotalPrice      string `json:"base_total_price"`
+	TaxAmount           string `json:"tax_amount"`
+	TaxPercent          string `json:"tax_percent"`
+	DiscountAmount      string `json:"discount_amount"`
+	DiscountPercent     string `json:"discount_percent"`
+	ShippingCost        string `json:"shipping_cost"`
+	GrandTotal          string `json:"grand_total"`
+	Note                string `json:"note"`
+	ShippingCourier     string `json:"shipping_courier"`
+	ShippingServiceName string `json:"shipping_service_name"`
+	ApprovedBy          string `json:"approved_by"`
+	ApprovedAt          string `json:"approved_at"`
+	CancelledBy         string `json:"cancelled_by"`
+	CancelledAt         string `json:"cancelled_at"`
+	CancellationNote    string `json:"cancellation_note"`
 }

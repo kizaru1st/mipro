@@ -26,3 +26,22 @@ type OrderItem struct {
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 }
+
+type OrderItemResponse struct {
+	ID              string `json:"id"`
+	OrderID         string `json:"order_id"`
+	ProductID       string `json:"product_id"`
+	Qty             int    `json:"qty"`
+	BasePrice       string `json:"base_price"`
+	BaseTotal       string `json:"base_total"`
+	TaxAmount       string `json:"tax_amount"`
+	TaxPercent      string `json:"tax_percent"`
+	DiscountAmount  string `json:"discount_amount"`
+	DiscountPercent string `json:"discount_percent"`
+	SubTotal        string `json:"sub_total"`
+	Sku             string `json:"sku"`
+	Name            string `json:"name"`
+	Weight          string `json:"weight"`
+	CreatedAt       string `json:"created_at"`
+	UpdatedAt       string `json:"updated_at"`
+}

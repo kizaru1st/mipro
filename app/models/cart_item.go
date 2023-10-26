@@ -23,3 +23,17 @@ type CartItem struct {
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 }
+
+type CartItemResponse struct {
+	ID              string          `json:"id"`
+	CartID          string          `json:"cart_id"`
+	ProductID       string          `json:"product_id"`
+	Qty             int             `json:"qty"`
+	BasePrice       decimal.Decimal `json:"base_price"`
+	BaseTotal       decimal.Decimal `json:"base_total"`
+	TaxAmount       decimal.Decimal `json:"tax_amount"`
+	TaxPercent      decimal.Decimal `json:"tax_percent"`
+	DiscountAmount  decimal.Decimal `json:"discount_amount"`
+	DiscountPercent decimal.Decimal `json:"discount_percent"`
+	SubTotal        decimal.Decimal `json:"sub_total"`
+}

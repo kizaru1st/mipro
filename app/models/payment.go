@@ -25,3 +25,20 @@ type Payment struct {
 	UpdatedAt   time.Time
 	DeletedAt   gorm.DeletedAt
 }
+
+type PaymentResponse struct {
+	ID          string          `json:"id"`
+	OrderID     string          `json:"order_id"`
+	Number      string          `json:"number"`
+	Amount      decimal.Decimal `json:"amount"`
+	Method      string          `json:"method"`
+	Status      string          `json:"status"`
+	Token       string          `json:"token"`
+	Payload     string          `json:"payload"`
+	PaymentType string          `json:"payment_type"`
+	VaNumber    string          `json:"va_number"`
+	BillCode    string          `json:"bill_code"`
+	BillKey     string          `json:"bill_key"`
+	CreatedAt   string          `json:"created_at"`
+	UpdatedAt   string          `json:"updated_at"`
+}

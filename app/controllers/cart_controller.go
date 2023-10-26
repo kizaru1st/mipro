@@ -42,16 +42,13 @@ func (server *Server) GetCart(w http.ResponseWriter, r *http.Request) {
 	cart, err := GetShoppingCart(server.DB, cartID)
 
 	if err != nil {
-		// Handle error
 		jsonResponse := map[string]string{"message": "Error getting the cart"}
 		sendJSONResponse(w, jsonResponse, http.StatusInternalServerError)
 		return
 	}
 
-	// Mengonversi `cart` ke format JSON yang sesuai
 	cartJSON, err := json.Marshal(cart)
 	if err != nil {
-		// Handle error
 		jsonResponse := map[string]string{"message": "Error converting cart to JSON"}
 		sendJSONResponse(w, jsonResponse, http.StatusInternalServerError)
 		return
@@ -61,7 +58,6 @@ func (server *Server) GetCart(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_, err = w.Write(cartJSON)
 	if err != nil {
-		// Handle error
 		jsonResponse := map[string]string{"message": "Error sending JSON response"}
 		sendJSONResponse(w, jsonResponse, http.StatusInternalServerError)
 		return
@@ -75,27 +71,27 @@ func (server *Server) AddItemToCart(w http.ResponseWriter, r *http.Request) {
 	productModel := models.Product{}
 	product, err := productModel.FindByID(server.DB, productID)
 	if err != nil {
-		// Handle error
 		jsonResponse := map[string]string{"message": "Product not found"}
 		sendJSONResponse(w, jsonResponse, http.StatusNotFound)
 		return
 	}
 
 	if qty > product.Stock {
-		// Handle error
 		jsonResponse := map[string]string{"message": "Quantity exceeds available stock"}
 		sendJSONResponse(w, jsonResponse, http.StatusBadRequest)
 		return
 	}
 
-	var cart *models.Cart
-
 	cartID := GetShoppingCartID(w, r)
-	cart, _ = GetShoppingCart(server.DB, cartID)
+	cart, err := GetShoppingCart(server.DB, cartID)
+	if err != nil {
+		jsonResponse := map[string]string{"message": "Error getting the cart"}
+		sendJSONResponse(w, jsonResponse, http.StatusInternalServerError)
+		return
+	}
 
+	//Tambahkan barang ke keranjang
 	fmt.Println("cart id ===> ", cart.ID)
-
-	// Jika berhasil menambahkan produk ke keranjang
 	jsonResponse := map[string]string{"message": "Product added to cart"}
 	sendJSONResponse(w, jsonResponse, http.StatusOK)
 }

@@ -32,3 +32,24 @@ type Shipment struct {
 	UpdatedAt   time.Time
 	DeletedAt   gorm.DeletedAt
 }
+
+type ShipmentResponse struct {
+	ID          string `json:"id"`
+	TrackNumber string `json:"track_number"`
+	Status      string `json:"status"`
+	TotalQty    int    `json:"total_qty"`
+	TotalWeight string `json:"total_weight"`
+	FirstName   string `json:"first_name"`
+	LastName    string `json:"last_name"`
+	CityID      string `json:"city_id"`
+	ProvinceID  string `json:"province_id"`
+	Address1    string `json:"address1"`
+	Address2    string `json:"address2"`
+	Phone       string `json:"phone"`
+	Email       string `json:"email"`
+	PostCode    string `json:"post_code"`
+	ShippedBy   string `json:"shipped_by"`
+	ShippedAt   string `json:"shipped_at"`
+	CreatedAt   string `json:"created_at"`
+	UpdatedAt   string `json:"updated_at"`
+}
