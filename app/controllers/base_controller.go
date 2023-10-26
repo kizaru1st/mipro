@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/gorilla/sessions"
+
 	"github.com/gorilla/mux"
 	"github.com/kizaru1st/mipro/app/models"
 	"github.com/kizaru1st/mipro/database/seeders"
@@ -33,6 +35,9 @@ type DBConfig struct {
 	DBName     string
 	DBPort     string
 }
+
+var store = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
+var sessionShoppingCart = "shopping-cart-session"
 
 func (server *Server) Init(appConfig AppConfig, dbConfig DBConfig) {
 	fmt.Println("Welcom to " + appConfig.AppName)

@@ -9,4 +9,6 @@ func (server *Server) InitRoutes() {
 	server.Router.HandleFunc("/", server.Home).Methods("GET")
 	server.Router.HandleFunc("/products", server.Products).Methods("GET")
 	server.Router.HandleFunc("/products/{slug}", server.GetProductBySlug).Methods("GET")
+	server.Router.HandleFunc("/carts", server.GetCart).Methods("GET")
+	server.Router.HandleFunc("/carts", server.AddItemToCart).Methods("POST")
 }
