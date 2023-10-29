@@ -3,6 +3,9 @@ package models
 import (
 	"time"
 
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+
 	"github.com/shopspring/decimal"
 )
 
@@ -36,4 +39,12 @@ type CartItemResponse struct {
 	DiscountAmount  decimal.Decimal `json:"discount_amount"`
 	DiscountPercent decimal.Decimal `json:"discount_percent"`
 	SubTotal        decimal.Decimal `json:"sub_total"`
+}
+
+func (c *CartItem) BeforeCreate(tx *gorm.DB) error {
+	if c.ID == "" {
+		c.ID = uuid.New().String()
+	}
+
+	return nil
 }
