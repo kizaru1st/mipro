@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strconv"
 
+	_ "github.com/shopspring/decimal"
+
 	"github.com/gorilla/mux"
 
 	"github.com/kizaru1st/mipro/app/models"
@@ -168,12 +170,23 @@ func (server *Server) GetProductByID(w http.ResponseWriter, r *http.Request) {
 
 func (server *Server) UpdateCart(w http.ResponseWriter, r *http.Request) {
 	cartID := GetShoppingCartID(w, r)
-	cart, _ := GetShoppingCart(server.DB, cartID)
+	cart, err := GetShoppingCart(server.DB, cartID)
+	if err != nil {
+		jsonResponse := map[string]string{"error": "Error fetching the cart"}
+		sendJSONResponse(w, jsonResponse, http.StatusInternalServerError)
+		return
+	}
 
 	for _, item := range cart.CartItems {
-		qty, _ := strconv.Atoi(r.FormValue(item.ID))
+		qtyStr := r.FormValue(item.ID)
+		qty, err := strconv.Atoi(qtyStr)
+		if err != nil {
+			jsonResponse := map[string]string{"error": "Invalid quantity for item"}
+			sendJSONResponse(w, jsonResponse, http.StatusBadRequest)
+			return
+		}
 
-		_, err := cart.UpdateItemQty(server.DB, item.ID, qty)
+		_, err = cart.UpdateItemQty(server.DB, item.ID, qty)
 		if err != nil {
 			jsonResponse := map[string]string{"error": "Error updating the cart"}
 			sendJSONResponse(w, jsonResponse, http.StatusInternalServerError)
@@ -181,11 +194,19 @@ func (server *Server) UpdateCart(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Calculate the cart after updating the items
+	_, err = cart.CalculateCart(server.DB, cartID)
+	if err != nil {
+		jsonResponse := map[string]string{"error": "Error calculating the cart"}
+		sendJSONResponse(w, jsonResponse, http.StatusInternalServerError)
+		return
+	}
+
 	jsonResponse := map[string]string{"message": "Cart updated successfully"}
 	sendJSONResponse(w, jsonResponse, http.StatusOK)
 }
 
-func (server *Server) RemoveItemByID(w http.ResponseWriter, r *http.Request) {
+func (server *Server) RemoveItem(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	if vars["id"] == "" {

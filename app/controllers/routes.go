@@ -12,5 +12,5 @@ func (server *Server) InitRoutes() {
 	server.Router.HandleFunc("/carts", server.GetCart).Methods("GET")
 	server.Router.HandleFunc("/carts", server.AddItemToCart).Methods("POST")
 	server.Router.HandleFunc("/carts/update", server.UpdateCart).Methods("POST")
-	server.Router.HandleFunc("/carts/delete/{id}", server.RemoveItemByID).Methods("GET")
+	server.Router.HandleFunc("/carts/delete/{id}", server.RemoveItem).Methods("GET")
 }
