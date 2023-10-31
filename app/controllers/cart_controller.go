@@ -4,8 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	_ "fmt"
+	"math"
 	"net/http"
+	"os"
 	"strconv"
+
+	"github.com/shopspring/decimal"
 
 	_ "github.com/shopspring/decimal"
 
@@ -49,48 +53,50 @@ func GetShoppingCart(db *gorm.DB, cartID string) (*models.Cart, error) {
 
 	existCart, err := cart.GetCart(db, cartID)
 	if err != nil {
-		existCart, err = cart.CreateCart(db, cartID)
-		if err != nil {
-			return nil, err
-		}
+		existCart, _ = cart.CreateCart(db, cartID)
 	}
 
-	_, err = existCart.CalculateCart(db, cartID)
-	if err != nil {
-		return nil, err
+	_, _ = existCart.CalculateCart(db, cartID)
+
+	updatedCart, _ := cart.GetCart(db, cartID)
+
+	totalWeight := 0
+	productModel := models.Product{}
+	for _, cartItem := range updatedCart.CartItems {
+		product, _ := productModel.FindByID(db, cartItem.ProductID)
+
+		productWeight, _ := product.Weight.Float64()
+		ceilWeight := math.Ceil(productWeight)
+
+		itemWeight := cartItem.Qty * int(ceilWeight)
+
+		totalWeight += itemWeight
 	}
 
-	updatedCart, err := cart.GetCart(db, cartID)
-	if err != nil {
-		return nil, err
-	}
+	updatedCart.TotalWeight = totalWeight
 
 	return updatedCart, nil
 }
 
 func (server *Server) GetCart(w http.ResponseWriter, r *http.Request) {
-	var cart *models.Cart
-
 	cartID := GetShoppingCartID(w, r)
-	cart, err := GetShoppingCart(server.DB, cartID)
+	cart, _ := GetShoppingCart(server.DB, cartID)
+	items, _ := cart.GetItems(server.DB, cartID)
+
+	provinces, err := server.GetProvinces()
 	if err != nil {
-		// Handle error, misalnya dengan mengembalikan respons JSON
-		server.respondWithError(w, http.StatusInternalServerError, "Internal Server Error")
+		jsonResponse := map[string]string{"error": "Failed to retrieve provinces"}
+		sendJSONResponse(w, jsonResponse, http.StatusInternalServerError)
 		return
 	}
 
-	items, err := cart.GetItems(server.DB, cartID)
-	if err != nil {
-		// Handle error, misalnya dengan mengembalikan respons JSON
-		server.respondWithError(w, http.StatusInternalServerError, "Internal Server Error")
-		return
+	jsonResponse := map[string]interface{}{
+		"cart":      cart,
+		"items":     items,
+		"provinces": provinces,
 	}
 
-	// Mengembalikan respons JSON
-	server.respondWithJSON(w, http.StatusOK, map[string]interface{}{
-		"cart":  cart,
-		"items": items,
-	})
+	sendJSONResponse(w, jsonResponse, http.StatusOK)
 }
 
 func (server *Server) AddItemToCart(w http.ResponseWriter, r *http.Request) {
@@ -100,39 +106,33 @@ func (server *Server) AddItemToCart(w http.ResponseWriter, r *http.Request) {
 	productModel := models.Product{}
 	product, err := productModel.FindByID(server.DB, productID)
 	if err != nil {
-		// Handle error, misalnya dengan mengembalikan respons JSON
-		server.respondWithError(w, http.StatusBadRequest, "Invalid product ID")
+		jsonResponse := map[string]string{"error": "Product not found"}
+		sendJSONResponse(w, jsonResponse, http.StatusNotFound)
 		return
 	}
 
 	if qty > product.Stock {
-		// Handle error, misalnya dengan mengembalikan respons JSON
-		server.respondWithError(w, http.StatusBadRequest, "Quantity exceeds available stock")
+		jsonResponse := map[string]string{"error": "Quantity exceeds available stock"}
+		sendJSONResponse(w, jsonResponse, http.StatusBadRequest)
 		return
 	}
 
 	var cart *models.Cart
 
 	cartID := GetShoppingCartID(w, r)
-	cart, err = GetShoppingCart(server.DB, cartID)
-	if err != nil {
-		// Handle error, misalnya dengan mengembalikan respons JSON
-		server.respondWithError(w, http.StatusInternalServerError, "Internal Server Error")
-		return
-	}
-
+	cart, _ = GetShoppingCart(server.DB, cartID)
 	_, err = cart.AddItem(server.DB, models.CartItem{
 		ProductID: productID,
 		Qty:       qty,
 	})
 	if err != nil {
-		// Handle error, misalnya dengan mengembalikan respons JSON
-		server.respondWithError(w, http.StatusInternalServerError, "Internal Server Error")
+		jsonResponse := map[string]string{"error": "Failed to add item to cart"}
+		sendJSONResponse(w, jsonResponse, http.StatusInternalServerError)
 		return
 	}
 
-	// Mengembalikan respons JSON
-	server.respondWithJSON(w, http.StatusOK, "Item added to cart successfully")
+	jsonResponse := map[string]string{"message": "Item added to cart successfully"}
+	sendJSONResponse(w, jsonResponse, http.StatusOK)
 }
 
 func sendJSONResponse(w http.ResponseWriter, data interface{}, statusCode int) {
@@ -153,7 +153,6 @@ func (server *Server) GetProductByID(w http.ResponseWriter, r *http.Request) {
 	productModel := models.Product{}
 	product, err := productModel.FindByID(server.DB, productID)
 	if err != nil {
-		// Handle error
 		jsonResponse := map[string]string{"message": "Product not found"}
 		sendJSONResponse(w, jsonResponse, http.StatusNotFound)
 		return
@@ -163,43 +162,23 @@ func (server *Server) GetProductByID(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	if err := json.NewEncoder(w).Encode(product); err != nil {
-		// Handle JSON encoding error
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func (server *Server) UpdateCart(w http.ResponseWriter, r *http.Request) {
 	cartID := GetShoppingCartID(w, r)
-	cart, err := GetShoppingCart(server.DB, cartID)
-	if err != nil {
-		jsonResponse := map[string]string{"error": "Error fetching the cart"}
-		sendJSONResponse(w, jsonResponse, http.StatusInternalServerError)
-		return
-	}
+	cart, _ := GetShoppingCart(server.DB, cartID)
 
 	for _, item := range cart.CartItems {
-		qtyStr := r.FormValue(item.ID)
-		qty, err := strconv.Atoi(qtyStr)
-		if err != nil {
-			jsonResponse := map[string]string{"error": "Invalid quantity for item"}
-			sendJSONResponse(w, jsonResponse, http.StatusBadRequest)
-			return
-		}
+		qty, _ := strconv.Atoi(r.FormValue(item.ID))
 
-		_, err = cart.UpdateItemQty(server.DB, item.ID, qty)
+		_, err := cart.UpdateItemQty(server.DB, item.ID, qty)
 		if err != nil {
-			jsonResponse := map[string]string{"error": "Error updating the cart"}
+			jsonResponse := map[string]string{"error": "Failed to update the cart"}
 			sendJSONResponse(w, jsonResponse, http.StatusInternalServerError)
 			return
 		}
-	}
-
-	// Calculate the cart after updating the items
-	_, err = cart.CalculateCart(server.DB, cartID)
-	if err != nil {
-		jsonResponse := map[string]string{"error": "Error calculating the cart"}
-		sendJSONResponse(w, jsonResponse, http.StatusInternalServerError)
-		return
 	}
 
 	jsonResponse := map[string]string{"message": "Cart updated successfully"}
@@ -227,4 +206,125 @@ func (server *Server) RemoveItem(w http.ResponseWriter, r *http.Request) {
 
 	jsonResponse := map[string]string{"message": "Item removed from the cart"}
 	sendJSONResponse(w, jsonResponse, http.StatusOK)
+}
+
+func (server *Server) GetCitiesByProvince(w http.ResponseWriter, r *http.Request) {
+	provinceID := r.URL.Query().Get("province_id")
+
+	cities, err := server.GetCitiesByProvinceID(provinceID)
+	if err != nil {
+		jsonResponse := map[string]string{"error": "Failed to retrieve cities"}
+		sendJSONResponse(w, jsonResponse, http.StatusInternalServerError)
+		return
+	}
+
+	res := Result{Code: 200, Data: cities, Message: "Success"}
+	result, err := json.Marshal(res)
+	if err != nil {
+		jsonResponse := map[string]string{"error": "Failed to marshal JSON"}
+		sendJSONResponse(w, jsonResponse, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(result)
+}
+
+func (server *Server) CalculateShipping(w http.ResponseWriter, r *http.Request) {
+	origin := os.Getenv("API_ONGKIR_ORIGIN")
+	destination := r.FormValue("city_id")
+	courier := r.FormValue("courier")
+
+	if destination == "" {
+		jsonResponse := map[string]string{"error": "Invalid destination"}
+		sendJSONResponse(w, jsonResponse, http.StatusBadRequest)
+		return
+	}
+
+	cartID := GetShoppingCartID(w, r)
+	cart, _ := GetShoppingCart(server.DB, cartID)
+
+	shippingFeeOptions, err := server.CalculateShippingFee(models.ShippingFeeParams{
+		Origin:      origin,
+		Destination: destination,
+		Weight:      cart.TotalWeight,
+		Courier:     courier,
+	})
+
+	if err != nil {
+		jsonResponse := map[string]string{"error": err.Error()}
+		sendJSONResponse(w, jsonResponse, http.StatusInternalServerError)
+		return
+	}
+
+	res := Result{Code: 200, Data: shippingFeeOptions, Message: "Success"}
+	result, _ := json.Marshal(res)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(result)
+}
+
+func (server *Server) ApplyShipping(w http.ResponseWriter, r *http.Request) {
+	origin := os.Getenv("API_ONGKIR_ORIGIN")
+	destination := r.FormValue("city_id")
+	courier := r.FormValue("courier")
+	shippingPackage := r.FormValue("shipping_package")
+
+	cartID := GetShoppingCartID(w, r)
+	cart, _ := GetShoppingCart(server.DB, cartID)
+
+	if destination == "" {
+		jsonResponse := map[string]string{"error": "Invalid destination"}
+		sendJSONResponse(w, jsonResponse, http.StatusBadRequest)
+		return
+	}
+
+	shippingFeeOptions, err := server.CalculateShippingFee(models.ShippingFeeParams{
+		Origin:      origin,
+		Destination: destination,
+		Weight:      cart.TotalWeight,
+		Courier:     courier,
+	})
+
+	if err != nil {
+		jsonResponse := map[string]string{"error": "Invalid shipping calculation"}
+		sendJSONResponse(w, jsonResponse, http.StatusInternalServerError)
+		return
+	}
+
+	var selectedShipping models.ShippingFeeOption
+
+	for _, shippingOption := range shippingFeeOptions {
+		if shippingOption.Service == shippingPackage {
+			selectedShipping = shippingOption
+			continue
+		}
+	}
+
+	type ApplyShippingResponse struct {
+		TotalOrder  decimal.Decimal `json:"total_order"`
+		ShippingFee decimal.Decimal `json:"shipping_fee"`
+		GrandTotal  decimal.Decimal `json:"grand_total"`
+		TotalWeight decimal.Decimal `json:"total_weight"`
+	}
+
+	var grandTotal decimal.Decimal
+
+	grandTotal = cart.GrandTotal.Add(decimal.NewFromInt(int64(selectedShipping.Fee)))
+
+	applyShippingResponse := ApplyShippingResponse{
+		TotalOrder:  cart.GrandTotal,
+		ShippingFee: decimal.NewFromInt(selectedShipping.Fee),
+		GrandTotal:  grandTotal,
+		TotalWeight: decimal.NewFromInt(int64(cart.TotalWeight)),
+	}
+
+	res := Result{Code: 200, Data: applyShippingResponse, Message: "Success"}
+	result, _ := json.Marshal(res)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(result)
 }
